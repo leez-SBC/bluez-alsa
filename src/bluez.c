@@ -14,6 +14,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/socket.h>
+#include <sys/un.h>
 
 #include <gio/gunixfdlist.h>
 
@@ -1007,6 +1009,33 @@ static void bluez_signal_interfaces_added(GDBusConnection *conn, const gchar *se
 	g_free(device_path);
 }
 
+static int rockchip_send_volume_to_deviceiolib(int volume)
+{
+	struct sockaddr_un serverAddr;
+	int snd_cnt = 1;
+	int sockfd;
+	char buff[100] = {0};
+
+	sockfd = socket(AF_UNIX, SOCK_DGRAM, 0);
+	if (sockfd < 0) {
+		printf("FUNC:%s create sockfd failed!\n", __func__);
+		return -1;
+	}
+
+	serverAddr.sun_family = AF_UNIX;
+	strcpy(serverAddr.sun_path, "/tmp/rk_deviceio_a2dp_volume");
+	memset(buff, 0, sizeof(buff));
+	sprintf(buff, "a2dp volume:%03d;", volume);
+
+	while(snd_cnt--) {
+		sendto(sockfd, buff, strlen(buff), MSG_DONTWAIT, (struct sockaddr *)&serverAddr, sizeof(serverAddr));
+		usleep(1000); //5ms
+	}
+
+	close(sockfd);
+	return 0;
+}
+
 static void bluez_signal_transport_changed(GDBusConnection *conn, const gchar *sender,
 		const gchar *path, const gchar *interface, const gchar *signal, GVariant *params,
 		void *userdata) {
@@ -1070,7 +1099,8 @@ static void bluez_signal_transport_changed(GDBusConnection *conn, const gchar *s
 
 			/* received volume is in range [0, 127]*/
 			t->a2dp.ch1_volume = t->a2dp.ch2_volume = g_variant_get_uint16(value);
-
+			/* Send volume chg to rockchip deviceio */
+			rockchip_send_volume_to_deviceiolib(t->a2dp.ch2_volume);
 		}
 
 		g_variant_unref(value);
