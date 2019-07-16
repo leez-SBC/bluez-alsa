@@ -80,15 +80,10 @@ retry:
 
 	if (strstr(at_type2str(reader->at.type), "RESP") && strstr(reader->at.value, "RING"))
 		rockchip_send_msg_to_deviceiolib("hfp_hf_ring");
-	else if (strstr(at_type2str(reader->at.type), "RESP") && strstr(reader->at.command, "+CIEV") &&
-		strstr(reader->at.value, "1,0"))
-		rockchip_send_msg_to_deviceiolib("hfp_hf_disconnected");
-	else if (strstr(at_type2str(reader->at.type), "RESP") && strstr(reader->at.command, "+CIEV") &&
-		strstr(reader->at.value, "1,1"))
-		rockchip_send_msg_to_deviceiolib("hfp_hf_pickup");
-	else if (strstr(at_type2str(reader->at.type), "RESP") && strstr(reader->at.command, "+CIEV") &&
-		strstr(reader->at.value, "2,2"))
-		rockchip_send_msg_to_deviceiolib("hfp_hf_calling");
+	else if (strstr(at_type2str(reader->at.type), "RESP") && strstr(reader->at.command, "+BCS"))
+		rockchip_send_msg_to_deviceiolib(msg);
+	else if (strstr(at_type2str(reader->at.type), "RESP") && strstr(reader->at.command, "+CIEV"))
+		rockchip_send_msg_to_deviceiolib(msg);
 
 	reader->next = tmp[0] != '\0' ? tmp : NULL;
 	return 0;
